@@ -537,7 +537,7 @@ func (s *SDK) createEmptyRegistrationFile() types.RegistrationFile {
 
 // loadRegistrationFile loads a registration file from a URI (IPFS or HTTP).
 func (s *SDK) loadRegistrationFile(uri string) types.RegistrationFile {
-	var rawData []byte
+	var rawData any // []byte or map[string]any
 
 	// Handle IPFS URIs
 	if strings.HasPrefix(uri, "ipfs://") {
@@ -599,7 +599,7 @@ func (s *SDK) loadRegistrationFile(uri string) types.RegistrationFile {
 		log.Fatalf("Invalid registration file format: expected an object")
 	}
 	var rawMap map[string]any
-	if err := json.Unmarshal(rawData, &rawMap); err != nil {
+	if err := json.Unmarshal([]byte(rawData.(string)), &rawMap); err != nil {
 		log.Fatalf("Failed to parse registration file JSON: %v", err)
 	}
 
