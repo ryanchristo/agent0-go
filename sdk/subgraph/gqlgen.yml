@@ -1,0 +1,10 @@
+schema:
+  - 'schema/schema.graphql'
+  - 'schema/scalars.graphql'
+  - 'schema/directives.graphql'
+
+exec:
+  filename: exec/generated.go
+
+model:
+  filename: model/generated.go

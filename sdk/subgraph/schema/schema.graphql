@@ -1,0 +1,255 @@
+# Agent0 SDK Subgraph Schema
+# Comprehensive indexing for ERC-8004 Agent Discovery and Trust
+
+# =============================================================================
+# CORE ENTITIES
+# =============================================================================
+
+type Agent @entity(immutable: false) {
+  # Primary identifiers
+  id: ID! # Format: "chainId:agentId" (e.g., "11155111:123")
+  chainId: BigInt!
+  agentId: BigInt!
+  
+  # Basic on-chain information
+  agentURI: String
+  agentURIType: String # "ipfs", "https", "http", "unknown"
+  
+  # Ownership and permissions
+  owner: Bytes! # Address
+  operators: [Bytes!]! # List of approved operators
+  
+  # Status and metadata
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  
+  # Link to IPFS registration file (source of truth, immutable)
+  registrationFile: AgentRegistrationFile
+  
+  # Relationships
+  feedback: [Feedback!]! @derivedFrom(field: "agent")
+  validations: [Validation!]! @derivedFrom(field: "agent")
+  metadata: [AgentMetadata!]! @derivedFrom(field: "agent")
+  
+  # Computed fields for search
+  totalFeedback: BigInt!
+  lastActivity: BigInt!
+}
+
+type Feedback @entity(immutable: false) {
+  # Primary identifier
+  id: ID! # Format: "chainId:agentId:clientAddress:feedbackIndex"
+  
+  # Relationships
+  agent: Agent!
+  clientAddress: Bytes!
+  
+  # On-chain feedback data
+  score: Int!
+  tag1: String
+  tag2: String
+  feedbackUri: String
+  feedbackURIType: String
+  feedbackHash: Bytes
+  
+  # Status
+  isRevoked: Boolean!
+  createdAt: BigInt!
+  revokedAt: BigInt
+  
+  # Link to IPFS feedback file (source of truth, immutable)
+  feedbackFile: FeedbackFile
+  
+  # Response data
+  responses: [FeedbackResponse!]! @derivedFrom(field: "feedback")
+}
+
+type FeedbackResponse @entity(immutable: false) {
+  id: ID! # Format: "feedbackId:responseIndex"
+  feedback: Feedback!
+  responder: Bytes!
+  responseUri: String
+  responseHash: Bytes
+  createdAt: BigInt!
+}
+
+type Validation @entity(immutable: false) {
+  # Primary identifier
+  id: ID! # requestHash
+  
+  # Relationships
+  agent: Agent!
+  validatorAddress: Bytes!
+  
+  # Validation data
+  requestUri: String
+  requestHash: Bytes!
+  response: Int # 0-100, 0 means pending
+  responseUri: String
+  responseHash: Bytes
+  tag: String
+  
+  # Status
+  status: ValidationStatus!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type AgentMetadata @entity(immutable: false) {
+  id: ID! # Format: "agentId:key"
+  agent: Agent!
+  key: String!
+  value: Bytes!
+  updatedAt: BigInt!
+}
+
+# =============================================================================
+# ENUMS
+# =============================================================================
+
+enum ValidationStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
+# =============================================================================
+# AGGREGATION ENTITIES (for analytics and search)
+# =============================================================================
+
+type AgentStats @entity(immutable: false) {
+  id: ID! # "chainId:agentId"
+  agent: Agent!
+  
+  # Feedback statistics
+  totalFeedback: BigInt!
+  averageScore: BigDecimal!
+  scoreDistribution: [Int!]! # [count_0-20, count_21-40, count_41-60, count_61-80, count_81-100]
+  
+  # Validation statistics
+  totalValidations: BigInt!
+  completedValidations: BigInt!
+  averageValidationScore: BigDecimal!
+  
+  # Activity metrics
+  lastActivity: BigInt!
+  
+  updatedAt: BigInt!
+}
+
+# =============================================================================
+# PROTOCOL ENTITIES
+# =============================================================================
+
+type Protocol @entity(immutable: false) {
+  id: ID! # "chainId"
+  chainId: BigInt!
+  name: String!
+  
+  # Registry addresses
+  identityRegistry: Bytes!
+  reputationRegistry: Bytes!
+  validationRegistry: Bytes!
+  
+  # Total counts (symmetric with GlobalStats)
+  totalAgents: BigInt!
+  totalFeedback: BigInt!
+  totalValidations: BigInt!
+  
+  # Search and discovery data (chain-specific)
+  agents: [Agent!]!           # Array of agents on this chain
+  tags: [String!]!           # All unique tags on this chain
+  
+  # Timestamps
+  updatedAt: BigInt!
+}
+
+# =============================================================================
+# GLOBAL STATISTICS
+# =============================================================================
+
+type GlobalStats @entity(immutable: false) {
+  id: ID! # "global"
+  
+  # Total counts
+  totalAgents: BigInt!
+  totalFeedback: BigInt!
+  totalValidations: BigInt!
+  totalProtocols: BigInt!
+  
+  # Search and discovery data
+  agents: [Agent!]!           # Array of all agents
+  tags: [String!]!           # All unique tags
+  
+  
+  # Timestamps
+  updatedAt: BigInt!
+}
+
+# =============================================================================
+# IMMUTABLE FILE-BASED ENTITIES (IPFS Data Sources)
+# =============================================================================
+
+type AgentRegistrationFile @entity(immutable: true) {
+  id: ID! # Format: "transactionHash:cid"
+  cid: String! # IPFS CID (for querying by content)
+  
+  # Agent link (passed via context)
+  agentId: String! # Format: "chainId:agentId"
+  
+  # IPFS file data
+  name: String
+  description: String
+  image: String
+  active: Boolean
+  x402support: Boolean
+  supportedTrusts: [String!]!
+  
+  # Endpoints
+  mcpEndpoint: String
+  mcpVersion: String
+  a2aEndpoint: String
+  a2aVersion: String
+  
+  # External identifiers
+  ens: String
+  did: String
+  agentWallet: Bytes
+  agentWalletChainId: BigInt # Chain ID for the wallet address
+  
+  # Capabilities (not implemented yet)
+  mcpTools: [String!]!
+  mcpPrompts: [String!]!
+  mcpResources: [String!]!
+  a2aSkills: [String!]!
+  
+  createdAt: BigInt!
+}
+
+type FeedbackFile @entity(immutable: true) {
+  id: ID! # Format: "transactionHash:cid"
+  cid: String! # IPFS CID (for querying by content)
+  
+  # Feedback link (passed via context)
+  feedbackId: String! # Format: "chainId:agentId:clientAddress:feedbackIndex"
+  
+  # IPFS file data
+  text: String
+  capability: String
+  name: String
+  skill: String
+  task: String
+  context: String
+  
+  # Proof of payment
+  proofOfPaymentFromAddress: String
+  proofOfPaymentToAddress: String
+  proofOfPaymentChainId: String
+  proofOfPaymentTxHash: String
+  
+  # Tags (only if on-chain tags are empty)
+  tag1: String
+  tag2: String
+  
+  createdAt: BigInt!
+}

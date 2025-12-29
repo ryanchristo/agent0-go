@@ -1,0 +1,4 @@
+# Directives not included in schema.graphql
+
+directive @entity(immutable: Boolean) on OBJECT
+directive @derivedFrom(field: String) on FIELD_DEFINITION

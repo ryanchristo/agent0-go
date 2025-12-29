@@ -209,10 +209,10 @@ type SearchParams struct {
 	Operators []Address `json:"operators,omitempty"`
 
 	// MCP is the MCP support status of the agent to search.
-	MCP bool `json:"mcp,omitempty"`
+	MCP *bool `json:"mcp,omitempty"`
 
 	// A2A is the A2A support status of the agent to search.
-	A2A bool `json:"a2a,omitempty"`
+	A2A *bool `json:"a2a,omitempty"`
 
 	// ENS is the ENS name of the agent to search (exact, case-insensitive).
 	ENS string `json:"ens,omitempty"`
@@ -239,10 +239,10 @@ type SearchParams struct {
 	MCPResources []string `json:"mcpResources,omitempty"`
 
 	// Active is the active status of the agent to search.
-	Active bool `json:"active,omitempty"`
+	Active *bool `json:"active,omitempty"`
 
 	// X402Support is the X402 support status of the agent to search.
-	X402Support bool `json:"x402Support,omitempty"`
+	X402Support *bool `json:"x402Support,omitempty"`
 }
 
 // SearchFeedbackParams is the search criteria for searching feedback.

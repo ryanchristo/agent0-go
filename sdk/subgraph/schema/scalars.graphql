@@ -1,0 +1,6 @@
+# Custom scalar types used by The Graph Protocol
+# These are not standard GraphQL scalars but are part of The Graph's schema system
+
+scalar BigInt
+scalar BigDecimal
+scalar Bytes
